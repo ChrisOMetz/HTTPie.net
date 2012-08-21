@@ -1,7 +1,4 @@
-﻿using System;
-
-
-namespace http
+﻿namespace http
 {
     public class Program
     {

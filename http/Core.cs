@@ -8,8 +8,9 @@ namespace http
     public class RunResult
     {
         public string ErrorMessage { get; set; }
-        public int StatusCode { get; set; }
+        public int ExitCode { get; set; }
         public string ResponseBody { get; set; }
+        public int ResponseCode { get; set; }
     }
 
     public  static class Core
@@ -26,10 +27,11 @@ namespace http
             {
                 response = Client.GetResponse(options);
 
+                
 
                 if (options.CheckStatus)
                 {
-                    result.StatusCode = GetExitStatus(response.StatusCode, options.AllowRedirects);
+                    result.ExitCode = GetExitStatus(response.StatusCode, options.AllowRedirects);
                 }
 
                 var receivedStream = response.GetResponseStream();
@@ -41,6 +43,7 @@ namespace http
                     result.ResponseBody = readStream.ReadToEnd();
                     readStream.Close();
                 }
+                result.ResponseCode = (int)response.StatusCode;
 
             }
             catch (WebException web)
@@ -48,18 +51,20 @@ namespace http
                 if (web.Response != null)
                 {
                     response = (HttpWebResponse)web.Response;
-                    result.StatusCode = (int)((HttpWebResponse) web.Response).StatusCode;
+                    result.ResponseCode = (int)response.StatusCode;
+                    result.ExitCode = GetExitStatus(response.StatusCode, options.AllowRedirects);
                     result.ErrorMessage = web.Message;
                 }
                 else
                 {
-                    result.StatusCode = 404;
+                    result.ExitCode = Consts.EXIT.ERROR;
                     result.ErrorMessage = web.Status + " " + web.Message;
                 }
                 
             }
             catch (Exception ex)
             {
+                result.ExitCode = Consts.EXIT.ERROR;
                 result.ErrorMessage = ex.Message;
             }
 
@@ -74,8 +79,8 @@ namespace http
         private static int GetExitStatus(HttpStatusCode statusCode, bool allowRedirects = false)
         {
             var code = (int) statusCode;
-            
-            if (code >= 300 && !allowRedirects)
+
+            if (code >= 300 && code <= 399 && !allowRedirects)
             {
                 return Consts.EXIT.ERROR_HTTP_3XX;
             }

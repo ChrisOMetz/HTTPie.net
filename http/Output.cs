@@ -10,12 +10,12 @@ namespace http
         {
             var oldColor = Console.ForegroundColor;
 
-            if (result.StatusCode != 0 && response == null)
+            if (result.ResponseCode != 0 && response == null)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.Write("ERROR {0} {1} ",
                               options.Item.Url,
-                              (int)result.StatusCode
+                              result.ResponseCode
                     );
 
             }
@@ -27,7 +27,7 @@ namespace http
                               response.Method,
                               (response.ResponseUri.OriginalString.ToLower().Contains("https") ? Consts.HTTPS : Consts.HTTP),
                               response.ProtocolVersion,
-                              (int) result.StatusCode
+                              result.ResponseCode
                     );
 
                 Console.ForegroundColor = ConsoleColor.DarkGreen;
