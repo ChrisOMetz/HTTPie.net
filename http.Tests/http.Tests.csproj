@@ -57,12 +57,19 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AutoContentTypeAndAcceptHeadersTests.cs" />
+    <Compile Include="Helpers\AssertExtenstions.cs" />
+    <Compile Include="Helpers\StringExtensions.cs" />
     <Compile Include="HttpBinTests.cs" />
     <Compile Include="ImplicitHTTPMethodTest.cs" />
+    <Compile Include="MultipartFormDataFileUploadTests.cs" />
     <Compile Include="PrettyOptionsTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuerystringTests.cs" />
     <Compile Include="Helpers\SimpleTestsBase.cs" />
+    <Compile Include="BinaryRequestDataTests.cs" />
+    <Compile Include="RequestBodyFromFilePathTests.cs" />
+    <Compile Include="BinaryResponseDataTests.cs" />
+    <Compile Include="VerboseFlagTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\http\http.csproj">
@@ -71,7 +78,18 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="files\file.bin">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="files\file2.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="files\file.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

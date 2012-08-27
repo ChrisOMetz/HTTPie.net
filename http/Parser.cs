@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.RegularExpressions;
 
 namespace http
@@ -12,6 +13,10 @@ namespace http
         public bool AllowRedirects { get; set; }
         public bool UseForm { get; set; }
         public bool UseJson { get; set; }
+        public bool IsVerbose { get; set; }
+        public bool ShowHelp { get; set; }
+        public bool ShowHeaders { get; set; }
+        public bool ShowBody { get; set; }
         
     }
 
@@ -29,7 +34,7 @@ namespace http
         //public bool Verify { get; set; }
         public int Timeout { get; set; }
         //public string[] Auth { get; set; }
-        //public string[] Files { get; set; }
+        public IList<string> Files { get; set; }
         public IList<string> Paramters { get; set; }
         public IList<string> QueryStringParameters { get; set; }
     }
@@ -43,6 +48,12 @@ namespace http
             var format = ProcessPrettyOptions(args);
             var item = ParseArguments(args);
 
+            //if (item.Files != null && !arguments.Contains("--form"))
+            //{
+            //    throw new ArgumentException("Invalid file fields (perhaps you meant --form?)");
+            //}
+
+
             return new Options
                 {
                     Format = format,
@@ -50,7 +61,11 @@ namespace http
                     CheckStatus = true,
                     AllowRedirects = false,
                     UseForm = arguments.Contains("--form"),
-                    UseJson = arguments.Contains("--json")
+                    UseJson = arguments.Contains("--json"),
+                    IsVerbose = arguments.Contains("--verbose"),
+                    ShowHeaders = !arguments.Contains("--body"),
+                    ShowBody = !arguments.Contains("--headers"),
+                    ShowHelp= arguments.Contains("--help")
                 };
         }
 
@@ -63,14 +78,53 @@ namespace http
                 if (option.StartsWith("--"))
                 {
                     if (option.Equals("--form", StringComparison.CurrentCultureIgnoreCase) ||
-                        option.Equals("--f", StringComparison.CurrentCultureIgnoreCase))
+                        option.Equals("--f", StringComparison.CurrentCultureIgnoreCase) ||
+                        option.Equals("/form", StringComparison.CurrentCultureIgnoreCase) ||
+                        option.Equals("/f", StringComparison.CurrentCultureIgnoreCase))
                     {
                         result.Add("--form");
                     }
                     else if (option.Equals("--json", StringComparison.CurrentCultureIgnoreCase) ||
-                             option.Equals("--j", StringComparison.CurrentCultureIgnoreCase))
+                             option.Equals("--j", StringComparison.CurrentCultureIgnoreCase) ||
+                             option.Equals("/json", StringComparison.CurrentCultureIgnoreCase) ||
+                             option.Equals("/j", StringComparison.CurrentCultureIgnoreCase))
                     {
                         result.Add("--json");
+                    }
+                    else if (option.Equals("--verbose", StringComparison.CurrentCultureIgnoreCase) ||
+                             option.Equals("/verbose", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        result.Add("--verbose");
+                    }
+                    else if (option.Equals("--headers", StringComparison.CurrentCultureIgnoreCase) ||
+                         option.Equals("--h", StringComparison.CurrentCultureIgnoreCase) ||
+                         option.Equals("/headers", StringComparison.CurrentCultureIgnoreCase) ||
+                         option.Equals("/h", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        result.Add("--headers");
+                    }
+                    else if (option.Equals("--body", StringComparison.CurrentCultureIgnoreCase) ||
+                     option.Equals("--b", StringComparison.CurrentCultureIgnoreCase) ||
+                     option.Equals("/body", StringComparison.CurrentCultureIgnoreCase) ||
+                     option.Equals("/b", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        result.Add("--body");
+                    }
+                    else if (option.Equals("--help", StringComparison.CurrentCultureIgnoreCase) ||
+                         option.Equals("--h", StringComparison.CurrentCultureIgnoreCase) ||
+                         option.Equals("/help", StringComparison.CurrentCultureIgnoreCase) ||
+                         option.Equals("/h", StringComparison.CurrentCultureIgnoreCase) ||
+                         option.Equals("/?", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        result.Add("--help");
+                    }
+                    else if (option.Equals("--help", StringComparison.CurrentCultureIgnoreCase) ||
+                             option.Equals("--h", StringComparison.CurrentCultureIgnoreCase) ||
+                             option.Equals("/help", StringComparison.CurrentCultureIgnoreCase) ||
+                             option.Equals("/h", StringComparison.CurrentCultureIgnoreCase) ||
+                             option.Equals("/?", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        result.Add("--help");
                     }
                 }
             }
@@ -161,6 +215,27 @@ namespace http
                                     result.Paramters = new List<string> {option};
                                 else
                                     result.Paramters.Add(option);
+                            }
+                            else if (option.Contains("@"))
+                            {
+                                //Files
+                                //check if file exists
+                                var fileInfo = option.Split('@');
+
+                                if (fileInfo.Length == 2)
+                                {
+                                    if (!File.Exists(fileInfo[1]))
+                                    {
+                                        throw new FileNotFoundException(string.Format("file '{0}' does not exist.", fileInfo[1]));
+                                    }
+
+
+                                    if (result.Files == null)
+                                        result.Files = new List<string> { option };
+                                    else
+                                        result.Files.Add(option);
+
+                                }
                             }
                             else if (option.Contains(":"))
                             {

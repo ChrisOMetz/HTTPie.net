@@ -19,7 +19,7 @@ namespace http.Tests
             // JSON headers shouldn't be automatically set for POST with no data.
             var result = http(new[] { "GET", httpbin("/headers") });
 
-            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode);
+            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode, "invalid exit code");
             Assert.IsTrue(result.ResponseBody.Contains("\"Accept\": \"*/*\""));
             Assert.IsFalse(result.ResponseBody.Contains("\"Content-Type\": \"application/json\""));
         }
@@ -30,7 +30,7 @@ namespace http.Tests
             // JSON headers shouldn't be automatically set for POST with no data.
             var result = http(new[] { "POST", httpbin("/post") });
 
-            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode);
+            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode, "invalid exit code");
             Assert.IsTrue(result.ResponseBody.Contains("\"Accept\": \"*/*\""), "invalid Accept");
             Assert.IsFalse(result.ResponseBody.Contains("\"Content-Type\": \"application/json\""), "invalid Content-Type");
         }
@@ -40,7 +40,7 @@ namespace http.Tests
         {
             var result = http(new[] { "POST", httpbin("/post"), "a=b" });
 
-            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode);
+            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode, "invalid exit code");
             Assert.IsTrue(result.ResponseBody.Contains((@"""Accept"": ""application\\json""")), "invalid Accept");
             Assert.IsTrue(result.ResponseBody.Contains("\"Content-Type\": \"application/json; charset=utf-8\""), "invalid Content-Type");
         }
@@ -62,7 +62,7 @@ namespace http.Tests
         {
             var result = http(new[] { "--json", "POST", httpbin("/post") });
 
-            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode);
+            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode, "invalid exit code");
             JObject o = JObject.Parse(result.ResponseBody);
             var back = o.SelectToken("headers", false)
                 .Value<JToken>()
@@ -82,7 +82,7 @@ namespace http.Tests
             "Accept:application/xml",
             "Content-Type:application/xml"});
 
-            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode);
+            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode, "invalid exit code");
             Assert.IsTrue(result.ResponseBody.Contains((@"""Accept"": ""application/xml""")), "invalid Accept");
             Assert.IsTrue(result.ResponseBody.Contains("\"Content-Type\": \"application/xml"), "invalid Content-Type");
         }
@@ -92,7 +92,7 @@ namespace http.Tests
         {
             var result = http(new[] { "--form", "POST", httpbin("/post") });
 
-            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode);
+            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode, "invalid exit code");
             Assert.IsTrue(result.ResponseBody.Contains("\"Content-Type\": \"application/x-www-form-urlencoded; charset=utf-8"), "invalid Content-Type");
         }
 
@@ -101,7 +101,7 @@ namespace http.Tests
         {
             var result = http(new[] { "--form", "POST", httpbin("/post"), "Content-Type:application/xml" });
 
-            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode);
+            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode, "invalid exit code");
             Assert.IsTrue(result.ResponseBody.Contains("\"Content-Type\": \"application/xml"), "invalid Content-Type");
         }
     }

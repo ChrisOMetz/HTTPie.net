@@ -16,7 +16,7 @@ namespace http.Tests
             const string path = "/get?a=1&b=2";
             var url = httpbin(path);
             var result = http(new[] { "GET", url });
-            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode);
+            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode, "invalid exit code");
 
             Assert.IsTrue(result.ResponseBody.Contains("\"url\": \"" + url + "\""));
         }
@@ -27,7 +27,7 @@ namespace http.Tests
             const string path = "/get?a=1&b=2";
             var url = httpbin(path);
             var result = http(new[] { "GET", httpbin("/get"), "a==1", "b==2" });
-            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode);
+            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode, "invalid exit code");
 
             Assert.IsTrue(result.ResponseBody.Contains("\"url\": \"" + url + "\""));
         }
@@ -40,7 +40,7 @@ namespace http.Tests
             const string path = "/get?a=1&a=1&a=1&a=1&b=2";
             var url = httpbin(path);
 
-            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode);
+            Assert.AreEqual(Consts.EXIT.OK, result.ExitCode, "invalid exit code");
             Assert.IsTrue(result.ResponseBody.Contains("\"url\": \"" + url + "\""));
         }
     }

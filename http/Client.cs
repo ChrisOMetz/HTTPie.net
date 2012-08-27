@@ -5,19 +5,33 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace http
 {
-    internal static class Client
+    public class FileParameter
+    {
+        public byte[] File { get; set; }
+        public string FileName { get; set; }
+        public string ContentType { get; set; }
+        public FileParameter(byte[] file, string filename, string contenttype = null)
+        {
+            File = file;
+            FileName = filename;
+            ContentType = contenttype;
+        }
+    }
+
+    internal class Client
     {
         private const string FORM = @"application/x-www-form-urlencoded; charset=utf-8";
         private const string JSON = @"application/json; charset=utf-8";
 
 
-        public static HttpWebResponse GetResponse(Options args)
-        {
+        public HttpWebRequest Request { get; set; }
+        public string RequestBody { get; private set; }
 
+        public HttpWebResponse GetResponse(Options args)
+        {
             var url = args.Item.Url;
 
             if (args.Item.QueryStringParameters != null)
@@ -40,8 +54,8 @@ namespace http
 
 
 
-            var request = WebRequest.Create(url) as HttpWebRequest;
-            request.Method = args.Item.Method;
+            this.Request = WebRequest.Create(url) as HttpWebRequest;
+            this.Request.Method = args.Item.Method;
 
             // Adding headers
             bool acceptSetExplicit = false;
@@ -54,60 +68,116 @@ namespace http
                     if (el.Length == 2)
                     {
                         var key = el[0];
-                        if (key.Equals("UserAgent", StringComparison.OrdinalIgnoreCase))
+                        if (key.Equals("User-Agent", StringComparison.OrdinalIgnoreCase))
                         {
-                            request.UserAgent = el[1];
-                        } else if (key.Equals("Accept", StringComparison.OrdinalIgnoreCase))
+                            this.Request.UserAgent = el[1];
+                        }
+                        else if (key.Equals("Accept", StringComparison.OrdinalIgnoreCase))
                         {
-                            request.Accept = el[1];
+                            this.Request.Accept = el[1];
                             acceptSetExplicit = true;
                         }
                         else if (key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
                         {
-                            request.ContentType = el[1];
+                            this.Request.ContentType = el[1];
                             contentTypeSetExplicit = true;
                         }
                         else
                         {
-                            request.Headers.Add(el[0], el[1]);
+                            this.Request.Headers.Add(el[0], el[1]);
                         }
                     }
                 }
             }
 
-            // Adding Parameters
-            if (request.Method == Consts.HTTP_POST || request.Method == Consts.HTTP_PUT)
+            // Adding Files
+            if (args.Item.Files != null)
+            {
+                string formDataBoundary = string.Format("----------{0:N}", Guid.NewGuid());
+                string contentType = "multipart/form-data; boundary=" + formDataBoundary;
+                var postParameters = new Dictionary<string, object>();
+
+                foreach (var fileParam in args.Item.Files)
+                {
+                    var fileInfo = fileParam.Split('@');
+
+                    if (fileInfo.Length == 2)
+                    {
+                        byte[] fileContent = null;
+
+                        try
+                        {
+                            fileContent = File.ReadAllBytes(fileInfo[1]);
+                        }
+                        catch
+                        {
+                        }
+
+                        if (fileContent != null)
+                        {
+                            postParameters.Add(fileInfo[0], new FileParameter(fileContent, Path.GetFileName(fileInfo[1]), GetContentTypeOfFile(Path.GetExtension(fileInfo[1]))));
+                        }
+                    }
+                }
+
+                if (args.Item.Paramters != null)
+                {
+                    foreach (var paramter in args.Item.Paramters)
+                    {
+                        var item = paramter.Split('=');
+                        if (item.Length == 2)
+                            postParameters.Add(item[0], item[1]);
+                    }
+                }
+
+                byte[] formData = GetMultipartFormData(postParameters, formDataBoundary);
+
+                this.Request.Method = Consts.HTTP_POST;
+                this.Request.ContentType = contentType;
+                this.Request.ContentLength = formData.Length;
+
+                using (var requstStream = this.Request.GetRequestStream())
+                {
+                    requstStream.Write(formData, 0, formData.Length);
+                    requstStream.Close();
+                }
+
+                this.RequestBody = Encoding.UTF8.GetString(formData);
+
+            }
+                // Adding Parameters
+            else if (this.Request.Method == Consts.HTTP_POST || this.Request.Method == Consts.HTTP_PUT)
             {
                 if (args.Item.Paramters != null)
                 {
-                    if (request.Method == Consts.HTTP_POST)
+                    if (this.Request.Method == Consts.HTTP_POST)
                     {
                         if (args.UseForm)
                         {
                             if (!contentTypeSetExplicit)
-                            request.ContentType = FORM;
+                                this.Request.ContentType = FORM;
                             if (!acceptSetExplicit)
-                            request.Accept = "*/*";
+                                this.Request.Accept = "*/*";
                         }
                         else
                         {
                             if (!contentTypeSetExplicit)
-                            request.ContentType = JSON;
+                                this.Request.ContentType = JSON;
                             if (!acceptSetExplicit)
-                            request.Accept = "application\\json";
+                                this.Request.Accept = "application\\json";
                         }
                     }
-                    else if (request.Method == Consts.HTTP_PUT)
+                    else if (this.Request.Method == Consts.HTTP_PUT)
                     {
                         if (!acceptSetExplicit)
-                            request.Accept = "*/*";
+                            this.Request.Accept = "*/*";
                     }
                     else
                     {
                         if (!contentTypeSetExplicit)
-                            request.ContentType = JSON;
+                            this.Request.ContentType = JSON;
                         if (!acceptSetExplicit)
-                            request.Accept = "application\\json";
+                            this.Request.Accept = "application\\json";
                     }
 
                     if (args.UseForm)
@@ -123,11 +193,12 @@ namespace http
 
                         if (postFormData != null)
                         {
-                            request.ContentLength = postFormData.Length;
-                            using (var dataStream = request.GetRequestStream())
+                            this.Request.ContentLength = postFormData.Length;
+                            using (var dataStream = this.Request.GetRequestStream())
                             {
                                 dataStream.Write(postFormData, 0, postFormData.Length);
                             }
+                            this.RequestBody = Encoding.UTF8.GetString(postFormData);
                         }
                     }
                     else
@@ -137,14 +208,12 @@ namespace http
                         var jsonData = JsonConvert.SerializeObject(tempList);
                         byte[] postJsonData = Encoding.UTF8.GetBytes(jsonData);
 
-                        if (postJsonData != null)
+                        this.Request.ContentLength = postJsonData.Length;
+                        using (var dataStream = this.Request.GetRequestStream())
                         {
-                            request.ContentLength = postJsonData.Length;
-                            using (var dataStream = request.GetRequestStream())
-                            {
-                                dataStream.Write(postJsonData, 0, postJsonData.Length);
-                            }
+                            dataStream.Write(postJsonData, 0, postJsonData.Length);
                         }
+                        this.RequestBody = Encoding.UTF8.GetString(postJsonData);
                     }
                 }
                 else
@@ -153,39 +222,114 @@ namespace http
                     if (args.UseJson)
                     {
                         if (!acceptSetExplicit)
-                            request.Accept = "application\\json";
+                            this.Request.Accept = "application\\json";
                         if (!contentTypeSetExplicit)
-                            request.ContentType = null;
+                            this.Request.ContentType = null;
                     }
                     if (args.UseForm)
                     {
                         if (!contentTypeSetExplicit)
-                            request.ContentType = FORM;
+                            this.Request.ContentType = FORM;
                     }
                 }
             }
 
 
+            /// Set Cookies
+            // TODO
+            //this.Request.CookieContainer = new CookieContainer();
+
+
+
+
 
 
             // Setting defaults
-            if (string.IsNullOrEmpty(request.UserAgent))
-                request.UserAgent = "HTTPie.net";
+            if (string.IsNullOrEmpty(this.Request.UserAgent))
+                this.Request.UserAgent = "HTTPie.net/" + BuildConsts.MAIN_VERSION;
+
+            if (string.IsNullOrEmpty(this.Request.Headers[HttpRequestHeader.AcceptEncoding]))
+                this.Request.Headers.Add(HttpRequestHeader.AcceptEncoding, "identity, defalte, compress, gzip");
 
             if (args.Item.Timeout > 0)
-                request.Timeout = args.Item.Timeout;
+                this.Request.Timeout = args.Item.Timeout;
 
 
-            if (string.IsNullOrEmpty(request.Accept))
+            if (string.IsNullOrEmpty(this.Request.Accept))
             {
-                request.Accept = "*/*";
+                this.Request.Accept = "*/*";
             }
 
 
 
             // Execute the Request
-            var response = request.GetResponse();
+            var response = this.Request.GetResponse();
             return response as HttpWebResponse;
+        }
+
+        private static byte[] GetMultipartFormData(Dictionary<string, object> postParameters, string boundary)
+        {
+            var encoding = Encoding.UTF8;
+            var formDataStream = new MemoryStream();
+            bool needsCLRF = false;
+
+            foreach (var param in postParameters)
+            {
+                if (needsCLRF)
+                    formDataStream.Write(encoding.GetBytes("\r\n"), 0, encoding.GetByteCount("\r\n"));
+
+                needsCLRF = true;
+
+                if (param.Value is FileParameter)
+                {
+                    var fileToUpload = (FileParameter) param.Value;
+
+                    // Add just the first part of this param, since we will write the file data directly to the Stream 
+                    string header = string.Format("--{0}\r\nContent-Disposition: form-data; name=\"{1}\"; filename=\"{2}\";\r\nContent-Type: {3}\r\n\r\n",
+                                                  boundary,
+                                                  param.Key,
+                                                  fileToUpload.FileName ?? param.Key,
+                                                  fileToUpload.ContentType ?? "application/octet-stream");
+
+                    formDataStream.Write(encoding.GetBytes(header), 0, encoding.GetByteCount(header));
+
+                    // Write the file data directly to the Stream, rather than serializing it to a string. 
+                    formDataStream.Write(fileToUpload.File, 0, fileToUpload.File.Length);
+                }
+                else
+                {
+                    string postData = string.Format("--{0}\r\nContent-Disposition: form-data; name=\"{1}\"\r\n\r\n{2}",
+                                                    boundary,
+                                                    param.Key,
+                                                    param.Value);
+
+                    formDataStream.Write(encoding.GetBytes(postData), 0, encoding.GetByteCount(postData));
+                }
+            }
+
+            // Add the end of the this.Request.  Start with a newline 
+            string footer = "\r\n--" + boundary + "--\r\n";
+            formDataStream.Write(encoding.GetBytes(footer), 0, encoding.GetByteCount(footer));
+
+            // Dump the Stream into a byte[] 
+            formDataStream.Position = 0;
+            var formData = new byte[formDataStream.Length];
+            formDataStream.Read(formData, 0, formData.Length);
+            formDataStream.Close();
+
+            return formData;
+        }
+
+        private static string GetContentTypeOfFile(string fileExtension)
+        {
+            var contentType = "application/octet-stream";
+            fileExtension = fileExtension.ToLower();
+
+            var registryKey = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(fileExtension);
+            if (registryKey != null && registryKey.GetValue("Content Type") != null)
+                contentType = registryKey.GetValue("Content Type").ToString();
+
+            return contentType;
         }
 
     }

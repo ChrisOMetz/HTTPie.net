@@ -9,6 +9,7 @@ namespace http
     {
         public string ErrorMessage { get; set; }
         public int ExitCode { get; set; }
+        public string OutputMessage { get; set; }
         public string ResponseBody { get; set; }
         public int ResponseCode { get; set; }
     }
@@ -23,15 +24,21 @@ namespace http
 
             HttpWebResponse response = null;
 
+            var client = new Client();
+
             try
             {
-                response = Client.GetResponse(options);
+                response = client.GetResponse(options);
 
                 
-
                 if (options.CheckStatus)
                 {
                     result.ExitCode = GetExitStatus(response.StatusCode, options.AllowRedirects);
+                }
+
+                if (options.IsVerbose)
+                {
+                    result.OutputMessage = Output.Write(options, client.Request, client.RequestBody);
                 }
 
                 var receivedStream = response.GetResponseStream();
@@ -69,7 +76,7 @@ namespace http
             }
 
 
-            Output.Write(options, result, response);
+            result.OutputMessage += Output.Write(options, result, response);
             
             if (response != null)
                 response.Close();
