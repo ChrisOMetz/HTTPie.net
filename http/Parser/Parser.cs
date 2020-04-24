@@ -5,39 +5,6 @@ using System.Text.RegularExpressions;
 
 namespace http
 {
-    public class Options
-    {
-        public FormatOption Format { get; set; }
-        public RequestItem Item { get; set; }
-        public bool CheckStatus { get; set; }
-        public bool AllowRedirects { get; set; }
-        public bool UseForm { get; set; }
-        public bool UseJson { get; set; }
-        public bool IsVerbose { get; set; }
-        public bool ShowHelp { get; set; }
-        public bool ShowHeaders { get; set; }
-        public bool ShowBody { get; set; }
-        
-    }
-
-    public class FormatOption
-    {
-
-    }
-
-    public class RequestItem
-    {
-        public string Url { get; set; }
-        public string Method { get; set; }
-        public IList<string> Headers { get; set; }
-        //public string[] Data { get; set; }
-        //public bool Verify { get; set; }
-        public int Timeout { get; set; }
-        //public string[] Auth { get; set; }
-        public IList<string> Files { get; set; }
-        public IList<string> Paramters { get; set; }
-        public IList<string> QueryStringParameters { get; set; }
-    }
 
     internal static class Parser
     {
@@ -73,9 +40,9 @@ namespace http
         {
             var result = new List<string>();
 
-            foreach (String option in args)
+            foreach (var option in args)
             {
-                if (option.StartsWith("--"))
+                if (option.StartsWith("--", StringComparison.InvariantCulture))
                 {
                     if (option.Equals("--form", StringComparison.CurrentCultureIgnoreCase) ||
                         option.Equals("--f", StringComparison.CurrentCultureIgnoreCase) ||
@@ -144,9 +111,9 @@ namespace http
             bool methodSet = false;
             bool urlSet = false;
 
-            foreach (String option in options)
+            foreach (var option in options)
             {
-                if (!option.StartsWith("-"))
+                if (!option.StartsWith("-", StringComparison.InvariantCulture))
                 {
                     bool found = false;
 
@@ -200,7 +167,7 @@ namespace http
                         else
                         {
 
-                            if (option.Contains("=="))
+                            if (option.Contains("==", StringComparison.InvariantCulture))
                             {
                                 // Querystring Parameters
                                 if (result.QueryStringParameters == null)
@@ -208,7 +175,7 @@ namespace http
                                 else
                                     result.QueryStringParameters.Add(option.Replace("==", "="));
                             }
-                            else if (option.Contains("="))
+                            else if (option.Contains("=", StringComparison.InvariantCulture))
                             {
                                 //Parameters
                                 if (result.Paramters == null)
@@ -216,7 +183,7 @@ namespace http
                                 else
                                     result.Paramters.Add(option);
                             }
-                            else if (option.Contains("@"))
+                            else if (option.Contains("@", StringComparison.InvariantCulture))
                             {
                                 //Files
                                 //check if file exists
@@ -226,7 +193,7 @@ namespace http
                                 {
                                     if (!File.Exists(fileInfo[1]))
                                     {
-                                        throw new FileNotFoundException(string.Format("file '{0}' does not exist.", fileInfo[1]));
+                                        throw new FileNotFoundException($"file '{fileInfo[1]}' does not exist.");
                                     }
 
 
@@ -237,7 +204,7 @@ namespace http
 
                                 }
                             }
-                            else if (option.Contains(":"))
+                            else if (option.Contains(":", StringComparison.InvariantCulture))
                             {
                                 //Header
                                 if (result.Headers == null)

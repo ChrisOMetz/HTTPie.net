@@ -27,7 +27,8 @@ namespace http.Tests
 
         public SimpleTestsBase()
         {
-            TEST_ROOT = Environment.CurrentDirectory;
+            TEST_ROOT =  Directory.GetCurrentDirectory();
+            TEST_ROOT = TEST_ROOT.Substring(0, TEST_ROOT.IndexOf("http.Tests") + 10);
 
             FILE_PATH = Path.Combine(TEST_ROOT, "files", "file.txt");
             FILE2_PATH = Path.Combine(TEST_ROOT, "files", "file2.txt");

@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Specialized;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Net;
 using System.Text;
-using Newtonsoft.Json.Linq;
 
 namespace http
 {
@@ -23,12 +22,7 @@ namespace http
             if (request != null)
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                var line = string.Format("{0} {1} {2}/{3}",
-                              request.Method,
-                              request.RequestUri.PathAndQuery,
-                              (request.RequestUri.OriginalString.ToLower().Contains("https") ? Consts.HTTPS : Consts.HTTP),
-                              request.ProtocolVersion
-                    );
+                var line = $"{request.Method} {request.RequestUri.PathAndQuery} {(request.RequestUri.OriginalString.ToLower().Contains("https") ? Consts.HTTPS : Consts.HTTP)}/{request.ProtocolVersion}";
                 output.Append(line);
                 Console.WriteLine(line);
 
@@ -150,7 +144,7 @@ namespace http
                 }
                 if (item.Value.Type == JTokenType.Object)
                 {
-                    var el = string.Format("\"{0}\"", item.Key);
+                    var el = $"\"{item.Key}\"";
                     output.Append(el);
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.Write(el);
@@ -164,7 +158,7 @@ namespace http
                 }
                 else
                 {
-                    string key = string.Format("\"{0}\"", item.Key);
+                    string key = $"\"{item.Key}\"";
                     output.Append(key);
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.Write(key);
@@ -173,10 +167,10 @@ namespace http
                     Console.ForegroundColor = ConsoleColor.White;
                     Console.Write(": ");
 
-                    string val = "";
+                    string val;
                     if (item.Value.Type == JTokenType.String)
                     {
-                        val = string.Format("\"{0}\"", item.Value);
+                        val = $"\"{item.Value}\"";
                         output.Append(val + Environment.NewLine);
                         Console.ForegroundColor = ConsoleColor.DarkGreen;
                         Console.WriteLine(val);
