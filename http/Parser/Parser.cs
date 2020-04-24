@@ -152,7 +152,7 @@ namespace http
                         {
                             string url;
                             //This must be the url
-                            if (!option.ToLower().StartsWith("http://") && !option.ToLower().StartsWith("https://") && !option.ToLower().StartsWith("ws://"))
+                            if (!option.ToLowerInvariant().StartsWith("http://") && !option.ToLowerInvariant().StartsWith("https://") && !option.ToLowerInvariant().StartsWith("ws://"))
                                 url = "http://" + option;
                             else
                                 url = option;

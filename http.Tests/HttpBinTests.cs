@@ -79,7 +79,7 @@ namespace http.Tests
         {
             var result = http(new[] { "GET", httpbin("/headers"), "Foo:bar" });
             Assert.AreEqual(Consts.EXIT.OK, result.ExitCode);
-            Assert.IsTrue(result.ResponseBody.Contains("\"User-Agent\": \"HTTPie.net\""));
+            Assert.IsTrue(result.ResponseBody.Contains("\"User-Agent\": \"HTTPie.net"));
             Assert.IsTrue(result.ResponseBody.Contains("\"Foo\": \"bar\""));
         }
 

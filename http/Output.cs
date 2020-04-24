@@ -22,7 +22,7 @@ namespace http
             if (request != null)
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                var line = $"{request.Method} {request.RequestUri.PathAndQuery} {(request.RequestUri.OriginalString.ToLower().Contains("https") ? Consts.HTTPS : Consts.HTTP)}/{request.ProtocolVersion}";
+                var line = $"{request.Method} {request.RequestUri.PathAndQuery} {(request.RequestUri.OriginalString.ToLowerInvariant().Contains("https") ? Consts.HTTPS : Consts.HTTP)}/{request.ProtocolVersion}";
                 output.Append(line);
                 Console.WriteLine(line);
 
@@ -72,10 +72,7 @@ namespace http
             if (result.ResponseCode != 0 && response == null)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                var line = string.Format("ERROR {0} {1} ",
-                              options.Item.Url,
-                              result.ResponseCode
-                    );
+                var line = $"ERROR {options.Item.Url} {result.ResponseCode} ";
                 output.Append(line);
                 Console.Write(line);
             }
@@ -83,11 +80,7 @@ namespace http
             if (response != null)
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                var line = string.Format("{0}/{1} {2} ",
-                              (response.ResponseUri.OriginalString.ToLower().Contains("https") ? Consts.HTTPS : Consts.HTTP),
-                              response.ProtocolVersion,
-                              result.ResponseCode
-                    );
+                var line = $"{(response.ResponseUri.OriginalString.ToLowerInvariant().Contains("https") ? Consts.HTTPS : Consts.HTTP)}/{response.ProtocolVersion} {result.ResponseCode} ";
 
                 Console.Write(line);
                 output.Append(line);

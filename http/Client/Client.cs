@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using MimeTypes;
 using Newtonsoft.Json;
 
 namespace http
@@ -234,13 +236,20 @@ namespace http
 
             // Setting defaults
             if (string.IsNullOrEmpty(this.Request.UserAgent))
+            {
                 this.Request.UserAgent = "HTTPie.net/" + typeof(Client).Assembly.GetName().Version.ToString();
+            }
 
             if (string.IsNullOrEmpty(this.Request.Headers[HttpRequestHeader.AcceptEncoding]))
+            {
                 this.Request.Headers.Add(HttpRequestHeader.AcceptEncoding, "identity, defalte, compress, gzip");
+            }
+                
 
             if (args.Item.Timeout > 0)
+            {
                 this.Request.Timeout = args.Item.Timeout;
+            }
 
 
             if (string.IsNullOrEmpty(this.Request.Accept))
@@ -264,7 +273,9 @@ namespace http
             foreach (var param in postParameters)
             {
                 if (needsCLRF)
-                    formDataStream.Write(encoding.GetBytes("\r\n"), 0, encoding.GetByteCount("\r\n"));
+                {
+                    formDataStream.Write(encoding.GetBytes(Environment.NewLine), 0, encoding.GetByteCount(Environment.NewLine));
+                }
 
                 needsCLRF = true;
 
@@ -273,7 +284,7 @@ namespace http
                     var fileToUpload = (FileParameter) param.Value;
 
                     // Add just the first part of this param, since we will write the file data directly to the Stream 
-                    string header = $"--{boundary}\r\nContent-Disposition: form-data; name=\"{param.Key}\"; filename=\"{fileToUpload.FileName ?? param.Key}\";{Environment.NewLine}Content-Type: {fileToUpload.ContentType ?? "application/octet-stream"}{Environment.NewLine}{Environment.NewLine}";
+                    string header = $"--{boundary}{Environment.NewLine}Content - Disposition: form-data; name=\"{param.Key}\"; filename=\"{fileToUpload.FileName ?? param.Key}\";{Environment.NewLine}Content-Type: {fileToUpload.ContentType ?? "application/octet-stream"}{Environment.NewLine}{Environment.NewLine}";
 
                     formDataStream.Write(encoding.GetBytes(header), 0, encoding.GetByteCount(header));
 
@@ -289,7 +300,7 @@ namespace http
             }
 
             // Add the end of the this.Request.  Start with a newline 
-            string footer = "\r\n--" + boundary + "--\r\n";
+            string footer = Environment.NewLine + "--" + boundary + "--" + Environment.NewLine;
             formDataStream.Write(encoding.GetBytes(footer), 0, encoding.GetByteCount(footer));
 
             // Dump the Stream into a byte[] 
@@ -301,20 +312,7 @@ namespace http
             return formData;
         }
 
-        private static string GetContentTypeOfFile(string fileExtension)
-        {
-            var contentType = "application/octet-stream";
-            fileExtension = fileExtension.ToLower();
-
-            // TODO: Choose right content type
-            contentType = "text/html; charset=utf-8";
-
-            //var registryKey = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(fileExtension);
-            //if (registryKey != null && registryKey.GetValue("Content Type") != null)
-            //    contentType = registryKey.GetValue("Content Type").ToString();
-
-            return contentType;
-        }
+        private static string GetContentTypeOfFile(string fileExtension) => MimeTypeMap.GetMimeType(fileExtension.ToLowerInvariant());
 
     }
 }

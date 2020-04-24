@@ -13,7 +13,7 @@ namespace http.Tests
             var result = http(new[] { "POST", httpbin("/post"), "@" + FILE_PATH_ARG });
 
             Assert.AreEqual(Consts.EXIT.OK, result.ExitCode, "invalid exit code");
-            Assert.IsTrue(result.ResponseBody.Contains(FILE_CONTENT), "no file content");
+            Assert.IsTrue(result.ResponseBody.Contains(FILE_CONTENT), "__test_file_content__");
             Assert.IsTrue(result.ResponseBody.Contains("\"Content-Type\": \"text/plain\""), "invalid content-type");
         }
     }
